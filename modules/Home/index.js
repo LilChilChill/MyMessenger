@@ -2,6 +2,7 @@
 import React from 'react';
 import { View, Text, Button, TouchableOpacity, StyleSheet, Image, TextInput } from 'react-native';
 import constants from '../../constants';
+import UserIcon from '../UserIcon';
 
 const HomeScreen = ({ navigation }) => {
   return (
@@ -21,20 +22,14 @@ const HomeScreen = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
-      {/* <View style={styles().search}>
-        <Image source={constants.icons.uriSearch} style={styles().icons} />
-        <TextInput style={styles().search_input} placeholder='Tìm Kiếm'>
-        </TextInput>
-      </View> */}
-
       <View style={styles().search_bg}>
         <View style={styles().search}>
           <Image source={constants.icons.uriSearch} style={styles().icons} />
-          <TextInput style={styles().search_input} placeholder='Tìm kiếm' placeholderTextColor={'#8f8f8f'}>
-            
-          </TextInput>
+          <TextInput style={styles().search_input} placeholder='Tìm kiếm' placeholderTextColor={'#8f8f8f'} />
         </View>
       </View>
+
+      <UserIcon />
     </View>
   );
 };
