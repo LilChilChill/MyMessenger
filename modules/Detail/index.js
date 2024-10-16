@@ -1,26 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, Alert, TextInput } from 'react-native';
+import { auth, firestore } from '../../firebaseConfig'; // Import firebaseConfig
+import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage
+import { signOut } from 'firebase/auth'; // Import hàm đăng xuất từ Firebase
+import { doc, getDoc, setDoc } from 'firebase/firestore'; // Import Firestore functions
 
 const DetailScreen = ({ navigation }) => {
   const [userName, setUserName] = useState('');
-  const [email, setEmail] = useState(''); // Giả sử email lấy từ API hoặc AsyncStorage
+  const [email, setEmail] = useState(auth.currentUser?.email); // Lấy email từ người dùng hiện tại
   const [isEditing, setIsEditing] = useState(false); // Biến để kiểm soát chế độ chỉnh sửa
   const [avatar, setAvatar] = useState('https://example.com/avatar.jpg'); // Giả sử avatar từ API
 
-  // Hàm lấy thông tin từ cơ sở dữ liệu (API)
+  // Hàm lấy thông tin người dùng từ Firestore
   useEffect(() => {
     fetchUserData();
   }, []);
 
   const fetchUserData = async () => {
-    try {
-      const response = await fetch(`http://192.168.1.141:5000/api/user?email=${email}`);
-      const data = await response.json();
+    if (!email) return;
 
-      if (response.ok && data.username) {
-        setUserName(data.username);
+    try {
+      const userDoc = doc(firestore, 'users', email); // Giả sử bạn lưu thông tin người dùng trong Firestore theo email
+      const docSnap = await getDoc(userDoc);
+
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setUserName(data.username || email); // Nếu không có tên người dùng, dùng email
       } else {
-        setUserName(email); // Nếu không có tên người dùng, dùng email
+        setUserName(email); // Nếu không tìm thấy tài liệu, sử dụng email
       }
     } catch (error) {
       Alert.alert('Lỗi', 'Không thể lấy thông tin người dùng');
@@ -34,23 +41,26 @@ const DetailScreen = ({ navigation }) => {
     }
 
     try {
-      // Gọi API để lưu tên người dùng mới
-      const response = await fetch('http://192.168.1.141:5000/api/user/update', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: email, username: userName }), // Gửi cả email và username
-      });
+      // Gọi API để lưu tên người dùng mới vào Firestore
+      const userDoc = doc(firestore, 'users', email); // Tài liệu theo email
+      await setDoc(userDoc, { username: userName }, { merge: true }); // Cập nhật tên người dùng
 
-      if (response.ok) {
-        Alert.alert('Thành công', 'Tên người dùng đã được cập nhật');
-        setIsEditing(false);
-      } else {
-        Alert.alert('Lỗi', 'Không thể cập nhật tên người dùng');
-      }
+      Alert.alert('Thành công', 'Tên người dùng đã được cập nhật');
+      setIsEditing(false);
     } catch (error) {
       Alert.alert('Lỗi', 'Có lỗi xảy ra khi lưu tên người dùng');
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth); // Đăng xuất từ Firebase
+      await AsyncStorage.removeItem('user'); // Xóa thông tin người dùng khỏi AsyncStorage
+      Alert.alert('Đăng xuất thành công!', 'Bạn đã đăng xuất.');
+      navigation.navigate('Login'); // Chuyển hướng về màn hình đăng nhập
+    } catch (error) {
+      console.error('Lỗi đăng xuất:', error);
+      Alert.alert('Lỗi', 'Có lỗi xảy ra khi đăng xuất');
     }
   };
 
@@ -99,7 +109,7 @@ const DetailScreen = ({ navigation }) => {
       <TouchableOpacity style={styles.button} onPress={() => Alert.alert('Trợ giúp', 'Chức năng trợ giúp')}>
         <Text style={styles.buttonText}>Trợ giúp</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Login')}>
+      <TouchableOpacity style={styles.button} onPress={handleLogout}>
         <Text style={styles.buttonText}>Đăng xuất</Text>
       </TouchableOpacity>
     </View>

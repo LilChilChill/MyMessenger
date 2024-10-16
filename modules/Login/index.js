@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { auth } from '../../firebaseConfig'; // Đường dẫn tới tệp firebaseConfig
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -7,24 +10,17 @@ const LoginScreen = ({ navigation }) => {
 
   const handleLogin = async () => {
     try {
-      const response = await fetch('http://192.168.1.141:5000/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-      
-      const data = await response.json();
-      if (response.ok) {
-        Alert.alert('Đăng nhập thành công!', data.message);
-        navigation.navigate('Home');
-      } else {
-        Alert.alert('Lỗi', data.message);
-      }
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Lưu thông tin người dùng vào AsyncStorage
+      await AsyncStorage.setItem('user', JSON.stringify({ email: user.email }));
+
+      Alert.alert('Đăng nhập thành công!', 'Chào mừng bạn trở lại!');
+      navigation.navigate('Home');
     } catch (error) {
-      console.error('Đã xảy ra lỗi:', error);
-      Alert.alert('Lỗi', 'Đã xảy ra lỗi khi kết nối tới API.');
+      console.error('Lỗi đăng nhập:', error);
+      Alert.alert('Đăng nhập thất bại!', error.message || 'Có lỗi xảy ra.');
     }
   };
 
