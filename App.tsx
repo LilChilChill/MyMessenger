@@ -1,42 +1,31 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createStackNavigator } from '@react-navigation/stack';
-import HomeScreen from './modules/Home';
-import RegisterScreen from './modules/Register';
-import DetailScreen from './modules/Detail';
-import LoginScreen from './modules/Login';
-import UserProfile from './modules/Detail';
+import LoginScreen from './src/Login';
+import RegisterScreen from './src/Register';
+import ChatListScreen from './src/ChatList';
+import ChatScreen from './src/Chat';
+import FriendsListScreen from './src/FriendList';
+import FriendRequestsScreen from './src/FriendRequest';
+import ProfileScreen from './src/Profile';
+import SettingsScreen from './src/Settings';
+
 
 const Stack = createStackNavigator();
 
-const App = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  useEffect(() => {
-    const checkLoginStatus = async () => {
-      const token = await AsyncStorage.getItem('token');
-      if (token) {
-        setIsLoggedIn(true); // Người dùng đã đăng nhập
-      }
-    };
-
-    checkLoginStatus();
-  }, []);
-
+export default function App() {
   return (
     <NavigationContainer>
-      <Stack.Navigator>
-        {isLoggedIn ? (
-          <Stack.Screen options={{headerShown: false}} name="Home" component={HomeScreen} />
-        ) : (
-          <Stack.Screen options={{headerShown: false}} name="Login" component={LoginScreen} />
-        )}
-        <Stack.Screen options={{headerShown: false}} name="Register" component={RegisterScreen} />
-        <Stack.Screen options={{ headerShown: false }} name="Detail" component={UserProfile} />
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="Register" component={RegisterScreen} />
+        <Stack.Screen name="ChatList" component={ChatListScreen} />
+        <Stack.Screen name="Chat" component={ChatScreen} />
+        <Stack.Screen name="FriendsList" component={FriendsListScreen} />
+        <Stack.Screen name="FriendRequests" component={FriendRequestsScreen} />
+        <Stack.Screen name="Profile" component={ProfileScreen} />
+        <Stack.Screen name="Settings" component={SettingsScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
-};
-
-export default App;
+}

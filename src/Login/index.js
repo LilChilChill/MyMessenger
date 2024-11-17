@@ -1,18 +1,41 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
-import { auth } from '../../firebaseConfig'; // Đảm bảo đường dẫn đúng đến tệp firebaseConfig
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const RegisterScreen = ({ navigation }) => {
+const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+
+  const handleLogin = async () => {
+    try {
+      const response = await fetch('http://192.168.1.141:5000/api/users/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        await AsyncStorage.setItem('token', data.token);
+        console.log('token', data.token);
+        navigation.navigate('ChatList');
+      } else {
+        Alert.alert('Đăng nhập thất bại', data.message || 'Vui lòng thử lại.');
+      }
+    } catch (error) {
+      Alert.alert('Lỗi', 'Không thể kết nối với máy chủ');
+    }
+    // navigation.navigate('ChatList');
+  };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Create Account</Text>
-      <Text style={styles.subtitle}>Sign up to get started</Text>
-
+      <Text style={styles.title}>Chào mừng quay lại!</Text>
+      <Text style={styles.subtitle}>Đăng nhập vào tài khoản của bạn</Text>
+      
       <TextInput
         style={styles.input}
         placeholder="Email"
@@ -22,27 +45,19 @@ const RegisterScreen = ({ navigation }) => {
       />
       <TextInput
         style={styles.input}
-        placeholder="Password"
+        placeholder="Mật khẩu"
         placeholderTextColor="#aaa"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
       />
-      <TextInput
-        style={styles.input}
-        placeholder="Confirm Password"
-        placeholderTextColor="#aaa"
-        value={confirmPassword}
-        onChangeText={setConfirmPassword}
-        secureTextEntry
-      />
 
-      <TouchableOpacity style={styles.button}>
-        <Text style={styles.buttonText}>Register</Text>
+      <TouchableOpacity style={styles.button} onPress={handleLogin}>
+        <Text style={styles.buttonText}>Đăng nhập</Text>
       </TouchableOpacity>
 
-      <Text onPress={() => navigation.navigate('Login')} style={styles.link}>
-        Already have an account? <Text style={styles.linkHighlight}>Login</Text>
+      <Text onPress={() => navigation.navigate('Register')} style={styles.link}>
+        Chưa có tài khoản? <Text style={styles.linkHighlight}>Đăng ký</Text>
       </Text>
     </View>
   );
@@ -114,4 +129,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default RegisterScreen;
+export default LoginScreen;
