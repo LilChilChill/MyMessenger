@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useState, useEffect } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, ActivityIndicator, } from 'react-native';
 
 // Dữ liệu mẫu cho danh sách story
 const storyData = [
@@ -9,15 +10,58 @@ const storyData = [
   { id: '4', name: 'Thu Hương', avatar: 'https://via.placeholder.com/100', isOnline: false },
 ];
 
-// Dữ liệu mẫu cho danh sách trò chuyện
-const chatData = [
-  { id: '1', name: 'Phạm Hùng', lastMessage: 'Đã bày tỏ cảm xúc 👍', avatar: 'https://via.placeholder.com/40', isOnline: true },
-  { id: '2', name: 'Phan Viết Trường', lastMessage: 'Oke b', avatar: 'https://via.placeholder.com/40', isOnline: true },
-  { id: '3', name: 'Nguyễn Phong', lastMessage: 'tỷ b k đi à', avatar: 'https://via.placeholder.com/40', isOnline: false },
-];
-
 const ChatListScreen = ({ navigation }) => {
-  const [isNavigateVisible, setIsNavigateVisible] = useState(false);
+
+  const [friends, setFriends] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchFriends = async () => {
+      try {
+        const token = await AsyncStorage.getItem('token'); // Thay bằng token thực tế
+        const response = await fetch('http://192.168.1.141:5000/api/users/friends', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`, // Gửi token trong header
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const formattedFriends = data.map((friend) => ({
+          id: friend._id,
+          name: friend.name,
+          avatar: friend.avatar
+            ? `data:${friend.avatar.contentType};base64,${friend.avatar.data}`
+            : 'https://via.placeholder.com/40', // Ảnh mặc định nếu không có avatar
+        }));
+
+        setFriends(formattedFriends);
+      } catch (error) {
+        console.error('Lỗi khi lấy danh sách bạn bè:', error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFriends();
+  }, []);
+
+  const handleNavigateToChat = (friendId, friendName, friendAvatar) => {
+    navigation.navigate('ChatScreen', { friendId, friendName, friendAvatar });
+  };
+
+  const renderFriendItem = ({ item }) => (
+    <TouchableOpacity style={styles.friendItem}
+      onPress={() => handleNavigateToChat(item.id, item.name)}
+    >
+      <Image source={{ uri: item.avatar }} style={styles.friendAvatar} />
+      <Text style={styles.friendName}>{item.name}</Text>
+    </TouchableOpacity>
+  );
 
   const handleNavigate = () => {
     navigation.navigate("Settings")
@@ -35,18 +79,7 @@ const ChatListScreen = ({ navigation }) => {
     </TouchableOpacity>
   );
 
-  const renderChatItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.chatItem}
-      onPress={() => navigation.navigate('Chat', { chatId: item.id, userName: item.name })}
-    >
-      <Image source={{ uri: item.avatar }} style={styles.chatAvatar} />
-      <View style={styles.chatContent}>
-        <Text style={styles.userName}>{item.name}</Text>
-        <Text style={styles.lastMessage}>{item.lastMessage}</Text>
-      </View>
-    </TouchableOpacity>
-  );
+  
 
   return (
     <View style={styles.container}>
@@ -66,13 +99,16 @@ const ChatListScreen = ({ navigation }) => {
         />
       </View>
 
-      {/* Danh sách trò chuyện */}
-      <FlatList
-        data={chatData}
-        renderItem={renderChatItem}
-        keyExtractor={(item) => item.id}
-        style={styles.chatList}
-      />
+      {loading ? (
+        <ActivityIndicator size="large" color="#fff" />
+      ) : (
+        <FlatList
+          data={friends}
+          renderItem={renderFriendItem}
+          keyExtractor={(item) => item.id}
+          style={styles.friendList}
+        />
+      )}
 
       
     </View>
@@ -133,41 +169,27 @@ const styles = StyleSheet.create({
     maxWidth: 60, // Giới hạn độ rộng của tên
     textAlign: 'center',
   },
-  chatList: {
-    marginBottom: 20,
+  friendList: {
+    marginTop: 10,
   },
-  chatItem: {
+  friendItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 15,
     padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#333', // Màu viền nhạt
+    borderRadius: 10,
+    backgroundColor: '#333',
   },
-  chatAvatar: {
+  friendAvatar: {
     width: 50,
     height: 50,
-    borderRadius: 25, // Hình tròn
-    marginRight: 10,
+    borderRadius: 25,
+    marginRight: 15,
   },
-  chatContent: {
-    flex: 1,
-  },
-  userName: {
-    fontSize: 16,
+  friendName: {
+    fontSize: 18,
     fontWeight: 'bold',
-    color: '#fff', // Màu chữ sáng
-  },
-  lastMessage: {
-    fontSize: 14,
-    color: '#888', // Màu chữ xám nhạt
-  },
-  button: {
-    backgroundColor: '#1e90ff', // Màu xanh nút
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-    marginTop: 10,
-    alignItems: 'center',
+    color: '#fff',
   },
   buttonText: {
     color: '#fff',
